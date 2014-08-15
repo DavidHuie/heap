@@ -2,19 +2,22 @@ package heap
 
 import (
 	"errors"
-	"log"
+	"sync"
 )
 
 type Interface interface {
-	Less(i Interface) bool
+	Comp(i Interface) bool
 }
 
 type Heap struct {
+	sync.Mutex
 	data []Interface
 }
 
 func NewHeap() *Heap {
-	return &Heap{make([]Interface, 0)}
+	return &Heap{
+		data: make([]Interface, 0),
+	}
 }
 
 func parentIndex(i int) (int, error) {
@@ -34,11 +37,13 @@ func (h *Heap) swap(i, j int) {
 	h.data[j] = a
 }
 
+// Inserts an element into the heap.
 func (h *Heap) Insert(e Interface) {
+	h.Lock()
+	defer h.Unlock()
+
 	h.data = append(h.data, e)
 	index := len(h.data) - 1
-
-	log.Printf("Inserting: %v", e)
 
 	// Move element from base to correct positioning.
 	for {
@@ -47,22 +52,22 @@ func (h *Heap) Insert(e Interface) {
 			break
 		}
 
-		log.Printf("Parent index: %v", parentI)
-
 		// Swap with parent if necessary.
-		if h.data[index].Less(h.data[parentI]) {
+		if h.data[index].Comp(h.data[parentI]) {
 			break
 		} else {
-			log.Printf("Swapping: %v & %v", parentI, index)
 			h.swap(index, parentI)
 			index = parentI
 		}
 	}
 
-	log.Printf("Result: %v", h.data)
 }
 
+// Deletes the root element from the heap and returns it.
 func (h *Heap) Delete() (Interface, error) {
+	h.Lock()
+	defer h.Unlock()
+
 	dataLen := len(h.data)
 
 	if dataLen == 0 {
@@ -77,17 +82,12 @@ func (h *Heap) Delete() (Interface, error) {
 	h.data = h.data[:dataLen-1]
 	dataLen = dataLen - 1
 
-	log.Printf("Truncated: %v", h.data)
-
 	index := 0
 	var swap int
 
 	// Trickle down root to correct position.
 	for {
 		c1, c2 := childIndicies(index)
-
-		log.Printf("C1: %v", c1)
-		log.Printf("C2: %v", c2)
 
 		// Find correct child to attempt swap with.
 		if c1 >= dataLen && c2 >= dataLen {
@@ -97,20 +97,15 @@ func (h *Heap) Delete() (Interface, error) {
 		} else if c2 >= dataLen {
 			swap = c1
 		} else {
-			if h.data[c1].Less(h.data[c2]) {
+			if h.data[c1].Comp(h.data[c2]) {
 				swap = c2
 			} else {
 				swap = c1
 			}
 		}
 
-		log.Printf("Current data: %v", h.data)
-		log.Printf("Len: %v", dataLen)
-		log.Printf("Index: %v", index)
-		log.Printf("Swap: %v", swap)
-
 		// Swap if necessary.
-		if h.data[index].Less(h.data[swap]) {
+		if h.data[index].Comp(h.data[swap]) {
 			h.swap(index, swap)
 			index = swap
 		} else {

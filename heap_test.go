@@ -7,7 +7,7 @@ import (
 
 type hint int
 
-func (h hint) Less(i Interface) bool {
+func (h hint) Comp(i Interface) bool {
 	return h < i.(hint)
 }
 
