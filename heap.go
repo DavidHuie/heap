@@ -2,10 +2,11 @@ package heap
 
 import (
 	"errors"
+	"log"
 )
 
 type Interface interface {
-	Less(Interface) bool
+	Less(i Interface) bool
 }
 
 type Heap struct {
@@ -13,9 +14,7 @@ type Heap struct {
 }
 
 func NewHeap() *Heap {
-	return &Heap{
-		make([]Interface, 0),
-	}
+	return &Heap{make([]Interface, 0)}
 }
 
 func parentIndex(i int) (int, error) {
@@ -39,33 +38,46 @@ func (h *Heap) Insert(e Interface) {
 	h.data = append(h.data, e)
 	index := len(h.data) - 1
 
+	log.Printf("Inserting: %v", e)
+
 	// Move element from base to correct positioning.
 	for {
 		parentI, err := parentIndex(index)
 		if err != nil {
-			return
+			break
 		}
+
+		log.Printf("Parent index: %v", parentI)
 
 		// Swap with parent if necessary.
-		if e.Less(h.data[parentI]) {
+		if h.data[index].Less(h.data[parentI]) {
 			break
 		} else {
+			log.Printf("Swapping: %v & %v", parentI, index)
 			h.swap(index, parentI)
 			index = parentI
-			e = h.data[parentI]
 		}
 	}
+
+	log.Printf("Result: %v", h.data)
 }
 
-func (h *Heap) Delete() Interface {
+func (h *Heap) Delete() (Interface, error) {
+	dataLen := len(h.data)
+
+	if dataLen == 0 {
+		return nil, errors.New("empty heap")
+	}
+
 	value := h.data[0]
 
 	// Truncate the data and make the last element the root.
-	dataLen := len(h.data)
 	newRoot := h.data[dataLen-1]
 	h.data[0] = newRoot
-	h.data = h.data[:dataLen-2]
+	h.data = h.data[:dataLen-1]
 	dataLen = dataLen - 1
+
+	log.Printf("Truncated: %v", h.data)
 
 	index := 0
 	var swap int
@@ -74,12 +86,15 @@ func (h *Heap) Delete() Interface {
 	for {
 		c1, c2 := childIndicies(index)
 
+		log.Printf("C1: %v", c1)
+		log.Printf("C2: %v", c2)
+
 		// Find correct child to attempt swap with.
-		if c1 > dataLen && c2 > dataLen {
+		if c1 >= dataLen && c2 >= dataLen {
 			break
-		} else if c1 > dataLen {
+		} else if c1 >= dataLen {
 			swap = c2
-		} else if c2 > dataLen {
+		} else if c2 >= dataLen {
 			swap = c1
 		} else {
 			if h.data[c1].Less(h.data[c2]) {
@@ -88,6 +103,11 @@ func (h *Heap) Delete() Interface {
 				swap = c1
 			}
 		}
+
+		log.Printf("Current data: %v", h.data)
+		log.Printf("Len: %v", dataLen)
+		log.Printf("Index: %v", index)
+		log.Printf("Swap: %v", swap)
 
 		// Swap if necessary.
 		if h.data[index].Less(h.data[swap]) {
@@ -98,5 +118,5 @@ func (h *Heap) Delete() Interface {
 		}
 	}
 
-	return value
+	return value, nil
 }
