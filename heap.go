@@ -5,6 +5,11 @@ import (
 	"sync"
 )
 
+var (
+	InvalidIndex = errors.New("invalid index")
+	EmptyHeap    = errors.New("empty heap")
+)
+
 type Interface interface {
 	Comp(i Interface) bool
 }
@@ -22,7 +27,7 @@ func NewHeap() *Heap {
 
 func parentIndex(i int) (int, error) {
 	if i <= 0 {
-		return 0, errors.New("invalid index")
+		return 0, InvalidIndex
 	}
 	return (i - 1) / 2, nil
 }
@@ -71,10 +76,10 @@ func (h *Heap) Delete() (Interface, error) {
 	dataLen := len(h.data)
 
 	if dataLen == 0 {
-		return nil, errors.New("empty heap")
+		return nil, EmptyHeap
 	}
 
-	value := h.data[0]
+	root := h.data[0]
 
 	// Truncate the data and make the last element the root.
 	newRoot := h.data[dataLen-1]
@@ -113,5 +118,5 @@ func (h *Heap) Delete() (Interface, error) {
 		}
 	}
 
-	return value, nil
+	return root, nil
 }
